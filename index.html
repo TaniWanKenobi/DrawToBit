@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bit Art Editor</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --accent: #e94560;
+    --text: #eee;
+    --text-dim: #999;
+    --grid-line: #333;
+    --pixel-off: #222;
+    --pixel-on: #fff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--surface);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 2px solid var(--accent);
+  }
+  header h1 { font-size: 1.3rem; font-weight: 700; }
+  header .size-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  header label { font-size: 0.85rem; color: var(--text-dim); }
+  header select, header input[type="number"] {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+  }
+  header input[type="number"] { width: 55px; }
+
+  .app { display: flex; gap: 0; min-height: calc(100vh - 52px); }
+
+  /* Toolbar */
+  .toolbar {
+    background: var(--surface);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 64px;
+    border-right: 1px solid var(--grid-line);
+  }
+  .toolbar h3 { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 1px; }
+  .tool-btn {
+    width: 40px; height: 40px;
+    background: var(--surface2);
+    border: 2px solid transparent;
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .tool-btn:hover { border-color: var(--text-dim); }
+  .tool-btn.active { border-color: var(--accent); background: rgba(233,69,96,0.2); }
+  .tool-btn .tooltip {
+    display: none;
+    position: absolute;
+    left: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #000;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 10;
+  }
+  .tool-btn:hover .tooltip { display: block; }
+
+  /* Canvas area */
+  .canvas-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+  }
+  .grid-wrapper {
+    display: inline-block;
+    border: 2px solid var(--grid-line);
+    background: var(--pixel-off);
+    line-height: 0;
+  }
+  .grid-wrapper .row { display: flex; }
+  .pixel {
+    width: 24px;
+    height: 24px;
+    border: 0.5px solid var(--grid-line);
+    cursor: crosshair;
+    transition: background-color 0.05s;
+  }
+  .pixel.on { background-color: var(--pixel-on); }
+  .pixel.off { background-color: var(--pixel-off); }
+
+  /* Output panel */
+  .output-panel {
+    background: var(--surface);
+    width: 420px;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--grid-line);
+  }
+  .output-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--grid-line);
+  }
+  .output-tab {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    font-size: 0.8rem;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .output-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--grid-line);
+  }
+  .output-header h3 { font-size: 0.85rem; }
+  .copy-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .copy-btn:hover { opacity: 0.85; }
+  .output-text {
+    flex: 1;
+    padding: 12px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    overflow: auto;
+    white-space: pre;
+    color: #c8d6e5;
+    background: #0d1117;
+  }
+
+  /* Preview */
+  .preview-section {
+    padding: 12px;
+    border-top: 1px solid var(--grid-line);
+    text-align: center;
+  }
+  .preview-section h3 { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .preview-canvas {
+    image-rendering: pixelated;
+    border: 1px solid var(--grid-line);
+    background: #000;
+  }
+
+  /* Tutorial panel */
+  .tutorial-panel {
+    display: none;
+    position: fixed;
+    top: 0; right: 0;
+    width: 520px;
+    height: 100vh;
+    background: var(--surface);
+    border-left: 2px solid var(--accent);
+    overflow-y: auto;
+    z-index: 100;
+    padding: 24px;
+  }
+  .tutorial-panel.open { display: block; }
+  .tutorial-panel h2 { font-size: 1.2rem; margin-bottom: 16px; color: var(--accent); }
+  .tutorial-panel h3 { font-size: 1rem; margin-top: 20px; margin-bottom: 8px; }
+  .tutorial-panel p, .tutorial-panel li { font-size: 0.9rem; line-height: 1.6; color: var(--text-dim); margin-bottom: 8px; }
+  .tutorial-panel code {
+    background: #0d1117;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.85rem;
+    color: #e94560;
+  }
+  .tutorial-panel pre {
+    background: #0d1117;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0 16px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+  .tutorial-panel pre code { padding: 0; background: none; color: #c8d6e5; }
+  .tutorial-panel .close-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  .tutorial-panel a { color: var(--accent); }
+  .tutorial-panel table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .tutorial-panel th, .tutorial-panel td { border: 1px solid var(--grid-line); padding: 6px 10px; text-align: left; }
+  .tutorial-panel th { background: var(--surface2); color: var(--text); }
+  .tutorial-panel td { color: var(--text-dim); }
+  .tutorial-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--grid-line);
+    color: var(--text);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .tutorial-toggle:hover { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎨 Bit Art Editor</h1>
+  <div class="size-controls">
+    <label>Grid:</label>
+    <input type="number" id="gridWidth" value="16" min="4" max="64" title="Width">
+    <span style="color:var(--text-dim)">×</span>
+    <input type="number" id="gridHeight" value="16" min="4" max="64" title="Height">
+    <button class="tool-btn" onclick="resizeGrid()" title="Apply" style="width:auto;padding:0 10px;font-size:0.8rem;">Apply</button>
+    <button class="tutorial-toggle" onclick="toggleTutorial()">📖 Tutorial</button>
+  </div>
+</header>
+
+<div class="app">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <h3>Tools</h3>
+    <button class="tool-btn active" data-tool="brush" onclick="setTool('brush')">
+      ✏️<span class="tooltip">Brush (P)</span>
+    </button>
+    <button class="tool-btn" data-tool="line" onclick="setTool('line')">
+      📏<span class="tooltip">Line (L)</span>
+    </button>
+    <button class="tool-btn" data-tool="box" onclick="setTool('box')">
+      ⬜<span class="tooltip">Box (R)</span>
+    </button>
+    <button class="tool-btn" data-tool="fill" onclick="setTool('fill')">
+      🪣<span class="tooltip">Fill (F)</span>
+    </button>
+    <button class="tool-btn" data-tool="eraser" onclick="setTool('eraser')">
+      🧹<span class="tooltip">Eraser (E)</span>
+    </button>
+    <h3 style="margin-top:8px">Actions</h3>
+    <button class="tool-btn" onclick="clearGrid()">
+      🗑️<span class="tooltip">Clear</span>
+    </button>
+    <button class="tool-btn" onclick="invertGrid()">
+      🔄<span class="tooltip">Invert</span>
+    </button>
+    <button class="tool-btn" onclick="flipH()">
+      ↔️<span class="tooltip">Flip H</span>
+    </button>
+    <button class="tool-btn" onclick="flipV()">
+      ↕️<span class="tooltip">Flip V</span>
+    </button>
+    <button class="tool-btn" onclick="undo()">
+      ↩️<span class="tooltip">Undo (Ctrl+Z)</span>
+    </button>
+    <button class="tool-btn" onclick="redo()">
+      ↪️<span class="tooltip">Redo (Ctrl+Y)</span>
+    </button>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas-area">
+    <div class="grid-wrapper" id="gridWrapper"></div>
+  </div>
+
+  <!-- Output -->
+  <div class="output-panel">
+    <div class="output-tabs">
+      <button class="output-tab active" data-format="progmem" onclick="setFormat('progmem')">PROGMEM (C)</button>
+      <button class="output-tab" data-format="binary" onclick="setFormat('binary')">Raw Binary</button>
+      <button class="output-tab" data-format="hex" onclick="setFormat('hex')">Hex Array</button>
+    </div>
+    <div class="output-header">
+      <h3>Output</h3>
+      <button class="copy-btn" onclick="copyOutput()">📋 Copy</button>
+    </div>
+    <div class="output-text" id="outputText"></div>
+    <div class="preview-section">
+      <h3>Preview (actual size)</h3>
+      <canvas id="previewCanvas" class="preview-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Tutorial Panel -->
+<div class="tutorial-panel" id="tutorialPanel">
+  <button class="close-btn" onclick="toggleTutorial()">×</button>
+  <h2>📖 Firmware Sprite Tutorial</h2>
+
+  <h3>How Binary Sprites Work</h3>
+  <p>Each row of your sprite is stored as bytes. A <code>1</code> bit = white pixel, <code>0</code> bit = black pixel. For a 16px-wide sprite, each row uses 2 bytes (16 bits).</p>
+  <pre><code>// Example: a 16x16 smiley face
+// Each row = 2 bytes = 16 pixels
+0b00011111, 0b11111000,  // row of the head outline
+0b01001100, 0b00110010,  // eyes row</code></pre>
+
+  <h3>Using in Arduino (ESP32/OLED)</h3>
+  <p>The output from this editor can be directly pasted into your Arduino sketch as a <code>PROGMEM</code> byte array:</p>
+  <pre><code>const unsigned char PROGMEM mySprite[] = {
+  // paste output here
+};
+
+// Draw it on OLED:
+display.drawBitmap(x, y, mySprite, 16, 16, SSD1306_WHITE);</code></pre>
+
+  <h3>Step-by-Step</h3>
+  <ol>
+    <li>Set the grid size to match your sprite (e.g., 16×16)</li>
+    <li>Draw your pixel art using the tools on the left</li>
+    <li>Copy the <strong>PROGMEM (C)</strong> output from the right panel</li>
+    <li>Paste it into your Arduino sketch</li>
+    <li>Use <code>display.drawBitmap()</code> to render it</li>
+  </ol>
+
+  <h3>Required Libraries</h3>
+  <table>
+    <tr><th>Library</th><th>Purpose</th></tr>
+    <tr><td><code>Adafruit SSD1306</code></td><td>OLED display driver</td></tr>
+    <tr><td><code>Adafruit GFX</code></td><td>Graphics primitives (drawBitmap, etc.)</td></tr>
+  </table>
+  <p>Install via Arduino IDE: <em>Sketch → Include Library → Manage Libraries</em></p>
+
+  <h3>Setup Code</h3>
+  <pre><code>#include &lt;Wire.h&gt;
+#include &lt;Adafruit_GFX.h&gt;
+#include &lt;Adafruit_SSD1306.h&gt;
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &amp;Wire, OLED_RESET);
+
+void setup() {
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+
+  // Draw your sprite at position (56, 24):
+  display.drawBitmap(56, 24, mySprite, 16, 16, SSD1306_WHITE);
+  display.display();
+}</code></pre>
+
+  <h3>Multiple Expressions</h3>
+  <p>Create multiple sprites for different states (happy, sad, sleeping) and swap them based on game logic:</p>
+  <pre><code>const unsigned char* sprite;
+if (pet.happiness > 50) {
+  sprite = petHappy;
+} else {
+  sprite = petSad;
+}
+display.drawBitmap(56, 2, sprite, 16, 16, SSD1306_WHITE);</code></pre>
+
+  <h3>Tips</h3>
+  <ul>
+    <li><code>PROGMEM</code> stores data in flash, saving precious RAM</li>
+    <li>Use <strong>Invert</strong> to quickly create light-on-dark vs dark-on-light variants</li>
+    <li>The preview at the bottom shows actual pixel size</li>
+    <li>You can resize the grid for non-square sprites (e.g., 32×16)</li>
+  </ul>
+</div>
+
+<script>
+// --- State ---
+let W = 16, H = 16;
+let grid = []; // grid[y][x] = 0 or 1
+let currentTool = 'brush';
+let currentFormat = 'progmem';
+let isDrawing = false;
+let drawValue = 1;
+let startPos = null;
+let history = [];
+let historyIndex = -1;
+
+// --- Init ---
+function initGrid() {
+  grid = Array.from({ length: H }, () => Array(W).fill(0));
+  pushHistory();
+  renderGrid();
+  updateOutput();
+}
+
+// --- History ---
+function pushHistory() {
+  history = history.slice(0, historyIndex + 1);
+  history.push(grid.map(r => r.slice()));
+  historyIndex = history.length - 1;
+  if (history.length > 100) { history.shift(); historyIndex--; }
+}
+
+function undo() {
+  if (historyIndex > 0) {
+    historyIndex--;
+    grid = history[historyIndex].map(r => r.slice());
+    renderGrid();
+    updateOutput();
+  }
+}
+
+function redo() {
+  if (historyIndex < history.length - 1) {
+    historyIndex++;
+    grid = history[historyIndex].map(r => r.slice());
+    renderGrid();
+    updateOutput();
+  }
+}
+
+// --- Grid Rendering ---
+function renderGrid() {
+  const wrapper = document.getElementById('gridWrapper');
+  wrapper.innerHTML = '';
+  const pixelSize = Math.max(8, Math.min(32, Math.floor(500 / Math.max(W, H))));
+  for (let y = 0; y < H; y++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (let x = 0; x < W; x++) {
+      const px = document.createElement('div');
+      px.className = 'pixel ' + (grid[y][x] ? 'on' : 'off');
+      px.style.width = pixelSize + 'px';
+      px.style.height = pixelSize + 'px';
+      px.dataset.x = x;
+      px.dataset.y = y;
+      px.addEventListener('mousedown', onPixelDown);
+      px.addEventListener('mousemove', onPixelMove);
+      px.addEventListener('contextmenu', e => e.preventDefault());
+      row.appendChild(px);
+    }
+    wrapper.appendChild(row);
+  }
+}
+
+// --- Drawing ---
+function onPixelDown(e) {
+  e.preventDefault();
+  const x = +e.target.dataset.x, y = +e.target.dataset.y;
+  isDrawing = true;
+
+  if (currentTool === 'brush') {
+    drawValue = e.button === 2 ? 0 : 1;
+    grid[y][x] = drawValue;
+    renderGrid();
+  } else if (currentTool === 'eraser') {
+    drawValue = 0;
+    grid[y][x] = 0;
+    renderGrid();
+  } else if (currentTool === 'fill') {
+    floodFill(x, y, grid[y][x] ? 0 : 1);
+    renderGrid();
+    pushHistory();
+  } else if (currentTool === 'line' || currentTool === 'box') {
+    startPos = { x, y };
+  }
+  if (currentTool === 'brush' || currentTool === 'eraser') updateOutput();
+}
+
+function onPixelMove(e) {
+  if (!isDrawing) return;
+  const x = +e.target.dataset.x, y = +e.target.dataset.y;
+  if (currentTool === 'brush' || currentTool === 'eraser') {
+    grid[y][x] = drawValue;
+    e.target.className = 'pixel ' + (drawValue ? 'on' : 'off');
+    updateOutput();
+  }
+}
+
+document.addEventListener('mouseup', (e) => {
+  if (!isDrawing) return;
+  isDrawing = false;
+
+  if (startPos && currentTool === 'line') {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (el && el.dataset && el.dataset.x !== undefined) {
+      drawLine(startPos.x, startPos.y, +el.dataset.x, +el.dataset.y, 1);
+      renderGrid();
+      updateOutput();
+    }
+    startPos = null;
+    pushHistory();
+  } else if (startPos && currentTool === 'box') {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (el && el.dataset && el.dataset.x !== undefined) {
+      drawBox(startPos.x, startPos.y, +el.dataset.x, +el.dataset.y, 1);
+      renderGrid();
+      updateOutput();
+    }
+    startPos = null;
+    pushHistory();
+  } else if (currentTool === 'brush' || currentTool === 'eraser') {
+    pushHistory();
+  }
+});
+
+// --- Algorithms (from Sprig: Bresenham, flood fill) ---
+function drawLine(x0, y0, x1, y1, val) {
+  const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  while (true) {
+    if (y0 >= 0 && y0 < H && x0 >= 0 && x0 < W) grid[y0][x0] = val;
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx) { err += dx; y0 += sy; }
+  }
+}
+
+function drawBox(x0, y0, x1, y1, val) {
+  const minX = Math.max(0, Math.min(x0, x1)), maxX = Math.min(W - 1, Math.max(x0, x1));
+  const minY = Math.max(0, Math.min(y0, y1)), maxY = Math.min(H - 1, Math.max(y0, y1));
+  for (let y = minY; y <= maxY; y++)
+    for (let x = minX; x <= maxX; x++)
+      grid[y][x] = val;
+}
+
+function floodFill(sx, sy, newVal) {
+  const oldVal = grid[sy][sx];
+  if (oldVal === newVal) return;
+  const queue = [{ x: sx, y: sy }];
+  const visited = Array.from({ length: H }, () => Array(W).fill(false));
+  while (queue.length) {
+    const { x, y } = queue.pop();
+    if (x < 0 || x >= W || y < 0 || y >= H) continue;
+    if (visited[y][x]) continue;
+    if (grid[y][x] !== oldVal) continue;
+    visited[y][x] = true;
+    grid[y][x] = newVal;
+    queue.push({ x: x - 1, y }, { x: x + 1, y }, { x, y: y - 1 }, { x, y: y + 1 });
+  }
+}
+
+// --- Transform tools ---
+function clearGrid() { grid = Array.from({ length: H }, () => Array(W).fill(0)); pushHistory(); renderGrid(); updateOutput(); }
+function invertGrid() {
+  grid = grid.map(r => r.map(v => v ? 0 : 1));
+  pushHistory(); renderGrid(); updateOutput();
+}
+function flipH() {
+  grid = grid.map(r => r.slice().reverse());
+  pushHistory(); renderGrid(); updateOutput();
+}
+function flipV() {
+  grid = grid.slice().reverse();
+  pushHistory(); renderGrid(); updateOutput();
+}
+
+// --- Output generation ---
+function gridToBinaryRows() {
+  const rows = [];
+  for (let y = 0; y < H; y++) {
+    const bytesPerRow = Math.ceil(W / 8);
+    const bytes = [];
+    for (let b = 0; b < bytesPerRow; b++) {
+      let byte = 0;
+      for (let bit = 0; bit < 8; bit++) {
+        const x = b * 8 + bit;
+        if (x < W && grid[y][x]) byte |= (1 << (7 - bit));
+      }
+      bytes.push(byte);
+    }
+    rows.push(bytes);
+  }
+  return rows;
+}
+
+function formatProgmem(rows) {
+  let out = `const unsigned char PROGMEM sprite[] = {\n`;
+  rows.forEach((bytes, i) => {
+    const formatted = bytes.map(b => '0b' + b.toString(2).padStart(8, '0')).join(', ');
+    out += `  ${formatted}${i < rows.length - 1 ? ',' : ''}\n`;
+  });
+  out += `};\n\n// Usage:\n// display.drawBitmap(x, y, sprite, ${W}, ${H}, SSD1306_WHITE);`;
+  return out;
+}
+
+function formatBinary(rows) {
+  return rows.map(bytes =>
+    bytes.map(b => b.toString(2).padStart(8, '0')).join(' ')
+  ).join('\n');
+}
+
+function formatHex(rows) {
+  let out = `const unsigned char PROGMEM sprite[] = {\n`;
+  rows.forEach((bytes, i) => {
+    const formatted = bytes.map(b => '0x' + b.toString(16).toUpperCase().padStart(2, '0')).join(', ');
+    out += `  ${formatted}${i < rows.length - 1 ? ',' : ''}\n`;
+  });
+  out += `};`;
+  return out;
+}
+
+function updateOutput() {
+  const rows = gridToBinaryRows();
+  const el = document.getElementById('outputText');
+  if (currentFormat === 'progmem') el.textContent = formatProgmem(rows);
+  else if (currentFormat === 'binary') el.textContent = formatBinary(rows);
+  else if (currentFormat === 'hex') el.textContent = formatHex(rows);
+  updatePreview();
+}
+
+function updatePreview() {
+  const canvas = document.getElementById('previewCanvas');
+  const scale = 4;
+  canvas.width = W * scale;
+  canvas.height = H * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#fff';
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++)
+      if (grid[y][x]) ctx.fillRect(x * scale, y * scale, scale, scale);
+}
+
+// --- UI handlers ---
+function setTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('[data-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
+}
+
+function setFormat(fmt) {
+  currentFormat = fmt;
+  document.querySelectorAll('.output-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.format === fmt));
+  updateOutput();
+}
+
+function copyOutput() {
+  const text = document.getElementById('outputText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy', 1500);
+  });
+}
+
+function resizeGrid() {
+  const newW = Math.max(4, Math.min(64, +document.getElementById('gridWidth').value));
+  const newH = Math.max(4, Math.min(64, +document.getElementById('gridHeight').value));
+  const newGrid = Array.from({ length: newH }, (_, y) =>
+    Array.from({ length: newW }, (_, x) => (y < H && x < W) ? grid[y][x] : 0)
+  );
+  W = newW; H = newH;
+  grid = newGrid;
+  history = []; historyIndex = -1;
+  pushHistory();
+  renderGrid();
+  updateOutput();
+}
+
+function toggleTutorial() {
+  document.getElementById('tutorialPanel').classList.toggle('open');
+}
+
+// --- Keyboard shortcuts ---
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+  else if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+  else if (e.key === 'p') setTool('brush');
+  else if (e.key === 'l') setTool('line');
+  else if (e.key === 'r') setTool('box');
+  else if (e.key === 'f') setTool('fill');
+  else if (e.key === 'e') setTool('eraser');
+});
+
+// --- Boot ---
+initGrid();
+</script>
+</body>
+</html>
