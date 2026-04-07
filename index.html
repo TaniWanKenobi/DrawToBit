@@ -56,7 +56,7 @@
   }
   header input[type="number"] { width: 55px; }
 
-  .app { display: flex; gap: 0; min-height: calc(100vh - 52px); }
+  .app { display: flex; gap: 0; height: calc(100vh - 52px); overflow: hidden; }
 
   /* Toolbar */
   .toolbar {
@@ -115,6 +115,7 @@
     padding: 24px;
     position: relative;
     background: var(--bg);
+    overflow: auto;
   }
   .grid-wrapper {
     display: inline-block;
@@ -284,9 +285,9 @@
   <h1><img src="Draw-Bit.svg" alt="Draw Bit" style="height:1.6em;vertical-align:middle;filter:brightness(0) invert(1);"></h1>
   <div class="size-controls">
     <label>Grid:</label>
-    <input type="number" id="gridWidth" value="16" min="4" max="64" title="Width">
+    <input type="number" id="gridWidth" value="16" min="4" max="128" title="Width">
     <span style="color:var(--text-dim)">×</span>
-    <input type="number" id="gridHeight" value="16" min="4" max="64" title="Height">
+    <input type="number" id="gridHeight" value="16" min="4" max="128" title="Height">
     <button class="tool-btn" onclick="resizeGrid()" title="Apply" style="width:auto;padding:0 10px;font-size:0.8rem;">Apply</button>
     <button class="tutorial-toggle" onclick="toggleTutorial()">📖 Tutorial</button>
   </div>
@@ -483,7 +484,7 @@ function redo() {
 function renderGrid() {
   const wrapper = document.getElementById('gridWrapper');
   wrapper.innerHTML = '';
-  const pixelSize = Math.max(8, Math.min(32, Math.floor(500 / Math.max(W, H))));
+  const pixelSize = Math.max(4, Math.min(40, Math.floor(700 / Math.max(W, H))));
   for (let y = 0; y < H; y++) {
     const row = document.createElement('div');
     row.className = 'row';
@@ -707,8 +708,8 @@ function copyOutput() {
 }
 
 function resizeGrid() {
-  const newW = Math.max(4, Math.min(64, +document.getElementById('gridWidth').value));
-  const newH = Math.max(4, Math.min(64, +document.getElementById('gridHeight').value));
+  const newW = Math.max(4, Math.min(128, +document.getElementById('gridWidth').value));
+  const newH = Math.max(4, Math.min(128, +document.getElementById('gridHeight').value));
   const newGrid = Array.from({ length: newH }, (_, y) =>
     Array.from({ length: newW }, (_, x) => (y < H && x < W) ? grid[y][x] : 0)
   );
