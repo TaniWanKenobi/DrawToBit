@@ -4,43 +4,55 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bit Art Editor</title>
+<link rel="icon" type="image/svg+xml" href="Draw-Bit.svg">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap');
+
   :root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --surface2: #0f3460;
-    --accent: #e94560;
-    --text: #eee;
-    --text-dim: #999;
-    --grid-line: #333;
-    --pixel-off: #222;
-    --pixel-on: #fff;
+    --bg: #1A1A2E;
+    --surface: #16213E;
+    --surface2: #0F3460;
+    --accent: #38C9FF;
+    --accent-dark: #C3EFFF;
+    --text: #E0E0E0;
+    --text-dim: #999999;
+    --grid-line: #2A3A5C;
+    --pixel-off: #1A1A2E;
+    --pixel-on: #38C9FF;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 400;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
   }
   header {
-    background: var(--surface);
+    background: var(--accent);
     padding: 12px 24px;
     display: flex;
     align-items: center;
     gap: 16px;
     border-bottom: 2px solid var(--accent);
   }
-  header h1 { font-size: 1.3rem; font-weight: 700; }
+  header h1 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: #FFFFFF;
+    text-shadow: 1px 1px 0 rgba(56,201,255,0.3), -1px -1px 0 rgba(56,201,255,0.3);
+  }
   header .size-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-  header label { font-size: 0.85rem; color: var(--text-dim); }
+  header label { font-family: 'Outfit', sans-serif; font-weight: 400; letter-spacing: 0.02em; font-size: 0.85rem; color: #FFFFFF; }
   header select, header input[type="number"] {
-    background: var(--surface2);
+    background: var(--surface);
     color: var(--text);
     border: 1px solid var(--grid-line);
-    border-radius: 4px;
+    border-radius: 8px;
     padding: 4px 8px;
     font-size: 0.85rem;
+    font-family: 'Outfit', sans-serif;
   }
   header input[type="number"] { width: 55px; }
 
@@ -54,14 +66,16 @@
     flex-direction: column;
     gap: 16px;
     min-width: 64px;
-    border-right: 1px solid var(--grid-line);
+    border-right: 2px solid var(--grid-line);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(56, 201, 255, 0.25);
   }
-  .toolbar h3 { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 1px; }
+  .toolbar h3 { font-family: 'Outfit', sans-serif; font-weight: 400; letter-spacing: 0.02em; font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); }
   .tool-btn {
     width: 40px; height: 40px;
-    background: var(--surface2);
+    background: var(--surface);
     border: 2px solid transparent;
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--text);
     cursor: pointer;
     display: flex;
@@ -70,22 +84,25 @@
     font-size: 1.1rem;
     transition: all 0.15s;
     position: relative;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
   }
-  .tool-btn:hover { border-color: var(--text-dim); }
-  .tool-btn.active { border-color: var(--accent); background: rgba(233,69,96,0.2); }
+  .tool-btn:hover { background: var(--surface2); border-color: var(--accent); }
+  .tool-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
   .tool-btn .tooltip {
     display: none;
     position: absolute;
     left: 48px;
     top: 50%;
     transform: translateY(-50%);
-    background: #000;
-    color: #fff;
+    background: #38C9FF;
+    color: #FFFFFF;
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 0.75rem;
     white-space: nowrap;
     z-index: 10;
+    box-shadow: 0 2px 8px rgba(56, 201, 255, 0.15);
   }
   .tool-btn:hover .tooltip { display: block; }
 
@@ -97,12 +114,15 @@
     justify-content: center;
     padding: 24px;
     position: relative;
+    background: var(--bg);
   }
   .grid-wrapper {
     display: inline-block;
     border: 2px solid var(--grid-line);
     background: var(--pixel-off);
     line-height: 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(56, 201, 255, 0.15);
   }
   .grid-wrapper .row { display: flex; }
   .pixel {
@@ -122,6 +142,8 @@
     display: flex;
     flex-direction: column;
     border-left: 1px solid var(--grid-line);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(56, 201, 255, 0.15);
   }
   .output-tabs {
     display: flex;
@@ -131,6 +153,8 @@
     flex: 1;
     padding: 8px;
     text-align: center;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
     font-size: 0.8rem;
     background: transparent;
     border: none;
@@ -138,7 +162,7 @@
     cursor: pointer;
     border-bottom: 2px solid transparent;
   }
-  .output-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .output-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
   .output-header {
     display: flex;
     align-items: center;
@@ -146,15 +170,18 @@
     padding: 8px 12px;
     border-bottom: 1px solid var(--grid-line);
   }
-  .output-header h3 { font-size: 0.85rem; }
+  .output-header h3 { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.85rem; }
   .copy-btn {
     background: var(--accent);
-    color: #fff;
+    color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     padding: 4px 12px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
     font-size: 0.8rem;
     cursor: pointer;
+    box-shadow: 0 2px 8px rgba(56, 201, 255, 0.15);
   }
   .copy-btn:hover { opacity: 0.85; }
   .output-text {
@@ -167,6 +194,7 @@
     white-space: pre;
     color: #c8d6e5;
     background: #0d1117;
+    border-radius: 8px;
   }
 
   /* Preview */
@@ -174,12 +202,15 @@
     padding: 12px;
     border-top: 1px solid var(--grid-line);
     text-align: center;
+    background: var(--surface2);
+    border-radius: 0 0 12px 12px;
   }
-  .preview-section h3 { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .preview-section h3 { font-family: 'Outfit', sans-serif; font-weight: 400; letter-spacing: 0.02em; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; }
   .preview-canvas {
     image-rendering: pixelated;
     border: 1px solid var(--grid-line);
     background: #000;
+    border-radius: 8px;
   }
 
   /* Tutorial panel */
@@ -190,33 +221,35 @@
     width: 520px;
     height: 100vh;
     background: var(--surface);
-    border-left: 2px solid var(--accent);
+    border-left: 3px solid var(--accent);
     overflow-y: auto;
     z-index: 100;
     padding: 24px;
+    border-radius: 12px 0 0 12px;
+    box-shadow: 0 2px 8px rgba(56, 201, 255, 0.15);
   }
   .tutorial-panel.open { display: block; }
-  .tutorial-panel h2 { font-size: 1.2rem; margin-bottom: 16px; color: var(--accent); }
-  .tutorial-panel h3 { font-size: 1rem; margin-top: 20px; margin-bottom: 8px; }
-  .tutorial-panel p, .tutorial-panel li { font-size: 0.9rem; line-height: 1.6; color: var(--text-dim); margin-bottom: 8px; }
+  .tutorial-panel h2 { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.2rem; margin-bottom: 16px; color: var(--accent); }
+  .tutorial-panel h3 { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem; margin-top: 20px; margin-bottom: 8px; }
+  .tutorial-panel p, .tutorial-panel li { font-family: 'Outfit', sans-serif; font-weight: 400; letter-spacing: 0.02em; font-size: 0.9rem; line-height: 1.6; color: var(--text-dim); margin-bottom: 8px; }
   .tutorial-panel code {
-    background: #0d1117;
+    background: var(--surface2);
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: 8px;
     font-family: 'Cascadia Code', monospace;
     font-size: 0.85rem;
-    color: #e94560;
+    color: var(--accent-dark);
   }
   .tutorial-panel pre {
-    background: #0d1117;
+    background: var(--surface2);
     padding: 12px;
-    border-radius: 6px;
+    border-radius: 8px;
     overflow-x: auto;
     margin: 8px 0 16px;
     font-size: 0.8rem;
     line-height: 1.5;
   }
-  .tutorial-panel pre code { padding: 0; background: none; color: #c8d6e5; }
+  .tutorial-panel pre code { padding: 0; background: none; color: var(--accent-dark); }
   .tutorial-panel .close-btn {
     position: absolute;
     top: 12px; right: 12px;
@@ -236,8 +269,10 @@
     border: 1px solid var(--grid-line);
     color: var(--text);
     padding: 4px 10px;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
     font-size: 0.8rem;
   }
   .tutorial-toggle:hover { border-color: var(--accent); }
@@ -246,7 +281,7 @@
 <body>
 
 <header>
-  <h1>🎨 Bit Art Editor</h1>
+  <h1><img src="Draw-Bit.svg" alt="Draw Bit" style="height:1.6em;vertical-align:middle;filter:brightness(0) invert(1);"></h1>
   <div class="size-controls">
     <label>Grid:</label>
     <input type="number" id="gridWidth" value="16" min="4" max="64" title="Width">
